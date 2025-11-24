@@ -1,13 +1,18 @@
 package com.example.chat.server;
 
-/**
- * Hello world!
- *
- */
-public class App 
-{
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
+public class App {
+
+    public static void main(String[] args) {
+
+        SQLiteDatabase db = new SQLiteDatabase();
+
+        User.initialize(db);
+        UserSession.initialize(db);
+        Conversation.initialize(db);
+        ConversationParticipant.initialize(db);
+        Message.initialize(db);
+
+        AuthManager authManager = new AuthManager();
+
     }
 }
