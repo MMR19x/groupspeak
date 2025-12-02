@@ -1,0 +1,352 @@
+/* --- COLORS & THEME VARIABLES --- */
+.root {
+    /* --- DARK MODE (Default: Zinc Palette) --- */
+    -bg-app: #09090b;       /* Deeper, modern black */
+    -bg-sidebar: #18181b;   /* Slightly lighter sidebar */
+    -bg-chat: #09090b;
+    -border-color: #27272a; /* Subtle borders */
+
+    -text-primary: #fafafa;
+    -text-secondary: #a1a1aa;
+
+    -accent: #3b82f6;       /* Vibrant Blue */
+    -accent-hover: #2563eb;
+    -danger: #ef4444;       /* Red for Unread/Errors */
+
+    -input-bg: #27272a;
+    -input-border: #3f3f46;
+
+    -hover-color: #27272a;
+    -selected-color: #2563eb; /* Slightly darker blue for selection */
+
+    -msg-sent-bg: #3b82f6;
+    -msg-sent-text: #ffffff;
+
+    -msg-recv-bg: #27272a;
+    -msg-recv-text: #fafafa;
+
+    -card-bg: #18181b;      /* Cards blend with sidebar */
+}
+
+.root.light-theme {
+    /* --- LIGHT MODE (Clean & Crisp) --- */
+    -bg-app: #ffffff;
+    -bg-sidebar: #f4f4f5;   /* Very light gray for contrast */
+    -bg-chat: #ffffff;
+    -border-color: #e4e4e7;
+
+    -text-primary: #18181b;
+    -text-secondary: #71717a;
+
+    -accent: #2563eb;
+    -accent-hover: #1d4ed8;
+    -danger: #ef4444;
+
+    -input-bg: #ffffff;
+    -input-border: #d4d4d8;
+
+    -hover-color: #e4e4e7;
+    -selected-color: #2563eb; /* Strong Blue for visibility */
+
+    -msg-sent-bg: #2563eb;
+    -msg-sent-text: #fff8e7;
+
+    -msg-recv-bg: #f4f4f5;
+    -msg-recv-text: #18181b;
+
+    -card-bg: #ffffff;
+}
+
+/* --- LAYOUT --- */
+.sidebar {
+    -fx-background-color: -bg-sidebar;
+    -fx-border-color: transparent -border-color transparent transparent;
+    -fx-border-width: 1;
+}
+
+.chat-pane {
+    -fx-background-color: -bg-chat;
+}
+
+/* --- TYPOGRAPHY --- */
+.app-title {
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-font-size: 24px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -text-primary;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 2, 0, 0, 1);
+}
+
+/* --- BUTTONS --- */
+.icon-btn, .simple-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-secondary;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-transition: all 0.2s;
+}
+
+/* Special sizing for icon buttons */
+.icon-btn {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+}
+
+.icon-btn:hover, .simple-btn:hover {
+    -fx-background-color: -hover-color;
+    -fx-text-fill: -text-primary;
+}
+
+.logout-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: -danger;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-border-color: -danger;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 15;
+}
+
+.logout-btn:hover {
+    -fx-background-color: -danger;
+    -fx-text-fill: #ffffff;
+}
+
+.send-btn {
+    -fx-background-color: -accent;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-padding: 0 24;
+}
+
+.send-btn:hover {
+    -fx-background-color: -accent-hover;
+}
+
+/* --- INPUTS --- */
+.search-field {
+    -fx-background-color: -input-bg;
+    -fx-text-fill: -text-primary;
+    -fx-prompt-text-fill: -text-secondary;
+    -fx-background-radius: 8;
+    -fx-border-color: -input-border;
+    -fx-border-radius: 8;
+    -fx-padding: 10 12;
+}
+
+.search-field:focused {
+    -fx-border-color: -accent;
+    -fx-background-color: -bg-app;
+}
+
+.message-input {
+    -fx-background-color: -input-bg;
+    -fx-text-fill: -text-primary;
+    -fx-prompt-text-fill: -text-secondary;
+    -fx-background-radius: 20;
+    -fx-border-color: -input-border;
+    -fx-border-radius: 20;
+    -fx-padding: 0 18;
+}
+
+.message-input:focused {
+    -fx-border-color: -accent;
+}
+
+/* --- CONTACT LIST --- */
+.contact-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 12;
+    -fx-border-color: transparent;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+    -fx-padding: 10;
+}
+
+.contact-item:hover {
+    -fx-background-color: -hover-color;
+}
+
+.contact-item.selected {
+    -fx-background-color: -selected-color;
+}
+
+/* Ensure text is readable (White) against the selected blue background in BOTH modes */
+.root.light-theme .contact-item.selected .contact-name,
+.root.light-theme .contact-item.selected .contact-sub,
+.contact-item.selected .contact-name,
+.contact-item.selected .contact-sub {
+    -fx-text-fill: #ffffff;
+}
+
+.contact-name {
+    -fx-text-fill: -text-primary;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.contact-sub {
+    -fx-text-fill: -text-secondary;
+    -fx-font-size: 13px;
+}
+
+.initials {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
+    -fx-font-weight: 800;
+}
+
+.avatar {
+    -fx-stroke: transparent;
+}
+
+/* --- STATUS INDICATORS --- */
+.green-dot {
+    -fx-fill: #22c55e;
+    -fx-stroke: -bg-sidebar;
+    -fx-stroke-width: 2;
+}
+
+/* The "Red One" - Unread Message Badge */
+.unread-badge {
+    -fx-background-color: -danger;
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-padding: 2 6;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-min-width: 18px;
+    -fx-alignment: center;
+}
+
+/* --- CHAT AREA --- */
+.top-bar {
+    -fx-background-color: -bg-chat;
+    -fx-border-color: transparent transparent -border-color transparent;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 5, 0, 0, 2);
+}
+
+.current-chat-label {
+    -fx-text-fill: -text-primary;
+    -fx-font-size: 17px;
+    -fx-font-weight: 700;
+}
+
+.message-sent {
+    -fx-background-color: -msg-sent-bg;
+    -fx-text-fill: -msg-sent-text;
+    -fx-background-radius: 18 18 4 18;
+    -fx-padding: 12 16;
+    -fx-font-size: 14px;
+}
+
+.message-received {
+    -fx-background-color: -msg-recv-bg;
+    -fx-text-fill: -msg-recv-text;
+    -fx-background-radius: 18 18 18 4;
+    -fx-padding: 12 16;
+    -fx-font-size: 14px;
+}
+
+/* --- SCROLL PANE --- */
+.scroll-pane-clean, .scroll-pane-clean > .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -border-color;
+    -fx-background-radius: 10;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+/* --- DIALOGS & MENUS --- */
+.dialog-pane {
+    -fx-background-color: -bg-app;
+    -fx-border-color: -border-color;
+    -fx-border-width: 1;
+}
+
+.dialog-pane .label {
+    -fx-text-fill: -text-primary;
+}
+
+/* Context Menu Styling */
+.context-menu {
+    -fx-background-color: -bg-app;
+    -fx-border-color: -border-color;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 2);
+}
+
+.menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 5 10;
+}
+
+.menu-item:focused {
+    -fx-background-color: -hover-color;
+}
+
+.menu-item .label {
+    -fx-text-fill: -text-primary;
+}
+
+/* Header (if present) */
+.dialog-pane .header-panel {
+    -fx-background-color: -bg-app;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: -border-color;
+}
+
+/* Button bar area */
+.dialog-pane .button-bar {
+    -fx-background-color: -bg-app;
+}
+
+/* Text inside dialogs */
+.dialog-text {
+    -fx-text-fill: -text-primary;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.dialog-radio {
+    -fx-text-fill: -text-primary;
+    -fx-font-size: 14px;
+}
+
+/* List Views in Dialogs */
+.dialog-list-view {
+    -fx-background-color: -input-bg;
+    -fx-border-color: -input-border;
+}
+
+.dialog-list-view .list-cell {
+    -fx-background-color: -input-bg;
+    -fx-text-fill: -text-primary;
+}
+
+.dialog-list-view .list-cell:filled:selected {
+    -fx-background-color: -accent;
+    -fx-text-fill: white;
+}
+
+.dialog-list-view .list-cell:filled:hover {
+    -fx-background-color: -hover-color;
+}
