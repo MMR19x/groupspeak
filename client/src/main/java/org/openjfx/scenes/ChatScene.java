@@ -1342,7 +1342,8 @@ public class ChatScene extends Scene {
     Optional<Boolean> result = dialog.showAndWait();
     result.ifPresent(confirmed -> {
       if (confirmed) {
-        Platform.exit();
+        Stage root = (Stage)this.root.getScene().getWindow();
+        root.setScene(new HomeScene(root));
       }
     });
   }
