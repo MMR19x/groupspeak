@@ -51,6 +51,10 @@ public class AuthManager {
 
             userRecord.updateTimestamp("last_seen");
             User.updateOnlineStatus(userRecord.getUserId(), true);
+            
+            // Broadcast online status
+            MessagingManager.broadcastUserStatus(userRecord.getUserId(), true);
+            
             return new AuthResult(true, "SUCCESS", userRecord.getUserId(), sessionToken);
         }
 

@@ -1,5 +1,7 @@
 package org.openjfx.scenes;
 
+import org.openjfx.ChatHandler;
+import org.openjfx.ProtocolHandler.RegisterResponse;
 import org.openjfx.scenes.components.DisconnectButton;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -11,6 +13,8 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
+import java.io.IOException;
 
 public class SignupScene extends Scene {
     private TextField emailField, userField, nameField;
@@ -126,11 +130,22 @@ public class SignupScene extends Scene {
 
         if (fail) return;
 
-        System.out.println("Your user is " + user + " your pass is " + pass);
-        System.out.println("your user is " + user + " email " + email +
-                         " password " + pass + " Displayname " +
-                         name);
-        
-        stage.setScene(new ChatScene());
+        try {
+            ChatHandler chatHandler = new ChatHandler();
+            RegisterResponse response = chatHandler.register(user, pass, name, email);
+            System.out.println("Signup Response: " + response.success + ", " + response.message);
+            
+            if (response.success) {
+                System.out.println("Registered successfully. ID: " + response.userId);
+                stage.setScene(new LoginScene(stage));
+            } else {
+                System.err.println("Registration failed: " + response.message);
+                emailLabel.setText(response.message != null ? response.message : "Registration Failed");
+                emailLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold; -fx-font-size: 14px;");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            emailLabel.setText("Connection Error");
+        }
     }
 }

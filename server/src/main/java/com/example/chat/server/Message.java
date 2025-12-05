@@ -2,8 +2,10 @@ package com.example.chat.server;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.UUID;
 
 public class Message {
@@ -25,6 +27,38 @@ public class Message {
 
     public static void initialize(SQLiteDatabase database) {
         db = database;
+    }
+
+    public static java.util.List<Message> findByConversationId(String conversationId) throws SQLException {
+        if (db == null) return new java.util.ArrayList<>();
+        
+        String sql = "SELECT * FROM MESSAGES WHERE conversation_id = ? ORDER BY created_at ASC";
+        java.util.List<Message> messages = new java.util.ArrayList<>();
+
+        try (Connection conn = db.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, conversationId);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                Message m = new Message(
+                    rs.getString("conversation_id"),
+                    rs.getString("sender_id"),
+                    rs.getString("content")
+                );
+                // We need to set the ID and timestamp from DB, but constructor generates new ones.
+                // Let's use a private constructor or reflection, or just set fields if not final.
+                // Since fields are private and no setters, let's add a constructor for DB retrieval.
+                m.messageId = rs.getString("message_id");
+                m.createdAt = rs.getString("created_at");
+                messages.add(m);
+            }
+        } catch (SQLException e) {
+            System.err.println("DB Error finding messages: " + e.getMessage());
+            throw e;
+        }
+        return messages;
     }
 
     public void save() throws SQLException {
@@ -66,5 +100,9 @@ public class Message {
 
     public String getContent() {
         return content;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
     }
 }

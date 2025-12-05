@@ -1,7 +1,10 @@
 package org.openjfx.scenes;
 
-
+import java.io.IOException;
 import org.openjfx.scenes.components.DisconnectButton;
+import org.openjfx.ChatHandler;
+import org.openjfx.ClientState;
+import org.openjfx.ProtocolHandler.LoginResponse;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -117,7 +120,27 @@ public class LoginScene extends Scene {
     if (fail)
       return;
 
-    System.out.println("Your user is " + user + " your pass is " + pass);
-    stage.setScene(new ChatScene());
+    try {
+        ChatHandler chatHandler = new ChatHandler();
+        LoginResponse response = chatHandler.login(user, pass);
+        
+        if (response.success) {
+            System.out.println("Login successful. Token: " + response.sessionToken);
+            
+            ClientState state = ClientState.getInstance();
+            state.setSessionToken(response.sessionToken);
+            state.setCurrentUserId(response.userId);
+            state.setCurrentUsername(user);
+            
+            stage.setScene(new ChatScene());
+        } else {
+            System.err.println("Login failed: " + response.message);
+            userLabel.setText(response.message != null ? response.message : "Login Failed");
+            userLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold; -fx-font-size: 14px;");
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+        userLabel.setText("Connection Error");
+    }
   }
 }

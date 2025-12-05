@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class User {
     private String userId;
@@ -107,6 +109,35 @@ public class User {
             System.err.println("DB Error finding user by username: " + e.getMessage());
         }
         return user;
+    }
+
+    public static List<User> findAll() {
+        if (db == null)
+            return new ArrayList<>();
+        
+        String sql = "SELECT * FROM USERS";
+        List<User> users = new ArrayList<>();
+
+        try (Connection conn = db.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                users.add(new User(
+                        rs.getString("user_id"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("password_hash"),
+                        rs.getString("display_name"),
+                        rs.getString("avatar_url"),
+                        rs.getInt("is_online"),
+                        rs.getString("last_seen"),
+                        rs.getString("created_at")));
+            }
+        } catch (SQLException e) {
+            System.err.println("DB Error finding all users: " + e.getMessage());
+        }
+        return users;
     }
 
     public static boolean userExists(String username) {

@@ -31,4 +31,19 @@ public class Connection {
     if (socket != null && !socket.isClosed())
       socket.close();
   }
+
+  public synchronized void send(String message) throws IOException {
+    if (bufferedWriter != null) {
+      bufferedWriter.write(message);
+      bufferedWriter.newLine();
+      bufferedWriter.flush();
+    }
+  }
+
+  public String receive() throws IOException {
+    if (bufferedReader != null) {
+      return bufferedReader.readLine();
+    }
+    return null;
+  }
 }

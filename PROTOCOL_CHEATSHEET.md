@@ -89,6 +89,37 @@ Retrieve all conversations for the authenticated user.
 {"type":"error","code":"not_authenticated","message":"Must be logged in to get conversations"}
 ```
 
+### get_users
+Retrieve all registered users.
+
+**Parameters:** None (requires authentication)
+
+**Example Request:**
+```json
+{"type":"get_users"}
+```
+
+**Success Response:**
+```json
+{"type":"users_response","users":[{"id":"f3b3bc3c...","username":"user1","displayName":"User One","isOnline":true},{"id":"03455d57...","username":"user2","displayName":"User Two","isOnline":false}]}
+```
+
+### get_messages
+Retrieve message history for a conversation.
+
+**Parameters:**
+- `conversationId` (required): ID of the conversation
+
+**Example Request:**
+```json
+{"type":"get_messages","conversationId":"d6c0b33c-ab21-4492-ae10-9d7f15a9b55b"}
+```
+
+**Success Response:**
+```json
+{"type":"messages_response","success":true,"messages":[{"id":"...","senderId":"...","content":"Hello","createdAt":"2023-10-27 10:00:00"}]}
+```
+
 ### create_conversation
 Create a new conversation (1-on-1 or group).
 
