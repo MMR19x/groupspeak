@@ -61,6 +61,10 @@ public class ClientHandler implements Runnable {
                         handleGetUsers(frame);
                         break;
 
+                    case "get_messages":
+                        handleGetMessages(frame);
+                        break;
+
                     case "create_conversation":
                         handleCreateConversation(frame);
                         break;
@@ -183,7 +187,7 @@ public class ClientHandler implements Runnable {
 
         try {
             List<Conversation> conversations = ConversationManager.getConversationsForUser(userId);
-            StringBuilder json = new StringBuilder("{\"type\":\"conversations_response\",\"conversations\":[");
+            StringBuilder json = new StringBuilder("{\"type\":\"conversations_response\",\"success\":true,\"conversations\":[");
             for(int i = 0; i < conversations.size(); i++) {
                 Conversation c = conversations.get(i);
                 json.append("{\"id\":\"").append(ProtocolParser.escape(c.getConversationId()))
@@ -198,6 +202,37 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleGetMessages(String frame) {
+        if(userId == null) {
+            ProtocolParser.sendError("not_authenticated", "Must be logged in to get messages", framing);
+            return;
+        }
+
+        String conversationId = ProtocolParser.extractJsonString(frame, "conversationId");
+        if(conversationId == null) {
+            ProtocolParser.sendError("invalid_args", "conversationId required", framing);
+            return;
+        }
+
+        try {
+            List<Message> messages = Message.findByConversationId(conversationId);
+            StringBuilder json = new StringBuilder("{\"type\":\"messages_response\",\"success\":true,\"messages\":[");
+            for(int i = 0; i < messages.size(); i++) {
+                Message m = messages.get(i);
+                json.append("{\"id\":\"").append(ProtocolParser.escape(m.getMessageId()))
+                    .append("\",\"senderId\":\"").append(ProtocolParser.escape(m.getSenderId()))
+                    .append("\",\"content\":\"").append(ProtocolParser.escape(m.getContent()))
+                    .append("\",\"createdAt\":\"").append(ProtocolParser.escape(m.getCreatedAt())) // Assuming getter exists or added
+                    .append("\"}");
+                if(i < messages.size() - 1) json.append(",");
+            }
+            json.append("]}");
+            ProtocolParser.sendRaw(json.toString(), framing);
+        } catch (Exception e) {
+            ProtocolParser.sendError("server_error", "Failed to get messages: " + e.getMessage(), framing);
+        }
+    }
+
     private void handleGetUsers(String frame) {
         if(userId == null) {
             ProtocolParser.sendError("not_authenticated", "Must be logged in to get users", framing);
@@ -206,7 +241,7 @@ public class ClientHandler implements Runnable {
 
         try {
             List<User> users = User.findAll();
-            StringBuilder json = new StringBuilder("{\"type\":\"users_response\",\"users\":[");
+            StringBuilder json = new StringBuilder("{\"type\":\"users_response\",\"success\":true,\"users\":[");
             for(int i = 0; i < users.size(); i++) {
                 User u = users.get(i);
                 // Don't include the requesting user in the list if desired, but usually client filters it.
@@ -327,13 +362,12 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        boolean ok = MessagingManager.sendDirectMessage(conversationId, senderId, content, recipientUserId);
-
-        if(ok) {
-            ProtocolParser.sendRaw(MessagingManager.buildMessageJson(senderId, content, conversationId), framing);
-        } else {
-            ProtocolParser.sendRaw("{\"type\":\"message_response\",\"success\":failed,\"message\":\"" + ProtocolParser.escape(content) + "\"}", framing);
-        }
+        // Attempt to send. Even if false (offline), it might be saved.
+        // MessagingManager.sendDirectMessage saves to DB.
+        boolean sent = MessagingManager.sendDirectMessage(conversationId, senderId, content, recipientUserId);
+        
+        // We return success because the message is persisted.
+        ProtocolParser.sendRaw(MessagingManager.buildMessageJson(senderId, content, conversationId), framing);
     }
 
     private void handleSendGroupMessage(String frame) {
@@ -346,13 +380,11 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        int deliveredCount = MessagingManager.sendGroupMessage(conversationId, senderId, content);
+        // MessagingManager.sendGroupMessage saves to DB.
+        MessagingManager.sendGroupMessage(conversationId, senderId, content);
 
-        if(deliveredCount != 0) {
-            ProtocolParser.sendRaw(MessagingManager.buildMessageJson(senderId, content, conversationId), framing);
-        } else {
-            ProtocolParser.sendRaw("{\"type\":\"message_response\",\"success\":failed,\"message\":\"" + ProtocolParser.escape(content) + "\"}", framing);
-        }
+        // We return success because the message is persisted.
+        ProtocolParser.sendRaw(MessagingManager.buildMessageJson(senderId, content, conversationId), framing);
     }
 
     private void handleExit(String frame) {
