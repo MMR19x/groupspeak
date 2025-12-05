@@ -33,6 +33,7 @@ import org.openjfx.Connection;
 import org.openjfx.ProtocolHandler;
 import org.openjfx.ProtocolHandler.MessageEvent;
 import org.openjfx.ProtocolHandler.StatusUpdate;
+import org.openjfx.ProtocolHandler.NewConversationEvent;
 
 /**
  * Main Application Class for the "GroupSpeak" Chat Application. This class
@@ -287,6 +288,9 @@ public class ChatScene extends Scene {
                         Platform.runLater(() -> handleIncomingMessage(line));
                     } else if (line.contains("\"type\":\"status\"")) {
                         Platform.runLater(() -> handleStatusUpdate(line));
+                    } else if (line.contains("\"type\":\"new_conversation\"")) {
+                        System.out.println("DEBUG: Received new_conversation event: " + line);
+                        Platform.runLater(() -> handleNewConversation(line));
                     } else {
                         // It's a response to a request, put in queue
                         ClientState.getInstance().getResponseQueue().put(line);
@@ -298,6 +302,55 @@ public class ChatScene extends Scene {
         });
         listenerThread.setDaemon(true);
         listenerThread.start();
+    }
+
+    private void handleNewConversation(String json) {
+        NewConversationEvent evt = ProtocolHandler.parseNewConversationEvent(json);
+        if (evt.id == null) return;
+
+        // Check if already exists
+        boolean exists = allContacts.stream().anyMatch(c -> c.id.equals(evt.id));
+        if (exists) return;
+
+        // Create new Contact
+        Contact c = new Contact(evt.id, evt.name, getNameColor(evt.name), null, evt.isGroup, false);
+        
+        // Fetch users to resolve participants
+        new Thread(() -> {
+            List<org.openjfx.model.User> modelUsers = new ArrayList<>();
+            try {
+                modelUsers = chatHandler.getUsers();
+            } catch (IOException e) {
+                System.err.println("Failed to fetch users for new conversation: " + e.getMessage());
+            }
+            
+            final List<org.openjfx.model.User> users = modelUsers;
+            Platform.runLater(() -> {
+                for (String pid : evt.participantIds) {
+                    for (org.openjfx.model.User mu : users) {
+                        if (mu.id.equals(pid)) {
+                            c.participants.add(new User(mu.id, mu.username, mu.displayName, mu.isOnline));
+                            break;
+                        }
+                    }
+                }
+                
+                // Determine online status for 1-on-1
+                if (!c.isGroup && !c.participants.isEmpty()) {
+                    String myId = ClientState.getInstance().getCurrentUserId();
+                    for (User u : c.participants) {
+                        if (!u.id.equals(myId)) {
+                            c.isOnline = u.isOnline;
+                            break;
+                        }
+                    }
+                }
+                
+                allContacts.add(0, c);
+                renderContactList(allContacts);
+                System.out.println("DEBUG: Added new conversation to UI: " + c.name);
+            });
+        }).start();
     }
 
     private void handleIncomingMessage(String json) {

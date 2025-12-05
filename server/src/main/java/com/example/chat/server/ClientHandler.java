@@ -284,6 +284,8 @@ public class ClientHandler implements Runnable {
 
         try {
             Conversation conversation;
+            List<String> participantIds = new java.util.ArrayList<>();
+
             if(otherUsername != null) {
                 // 1-on-1 conversation - find user by username
                 User otherUser = User.findByUsername(otherUsername);
@@ -292,6 +294,8 @@ public class ClientHandler implements Runnable {
                     return;
                 }
                 conversation = ConversationManager.createOneOnOneConversation(userId, otherUser.getUserId());
+                participantIds.add(userId);
+                participantIds.add(otherUser.getUserId());
             } else if(name != null && participantsJson != null) {
                 // Group conversation - assume participants is comma-separated usernames
                 String[] parts = participantsJson.split(",");
@@ -306,10 +310,14 @@ public class ClientHandler implements Runnable {
                 }
                 participants.add(0, userId); // Add creator
                 conversation = ConversationManager.createGroupConversation(name, participants);
+                participantIds.addAll(participants);
             } else {
                 ProtocolParser.sendError("invalid_args", "Provide 'otherUsername' for 1-on-1 or 'name' and 'participants' for group", framing);
                 return;
             }
+
+            // Notify participants
+            MessagingManager.notifyNewConversation(conversation, participantIds);
 
             ProtocolParser.sendRaw("{\"type\":\"create_conversation_response\",\"success\":true,\"conversationId\":\""
                 + ProtocolParser.escape(conversation.getConversationId()) + "\"}", framing);

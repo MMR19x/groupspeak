@@ -26,8 +26,8 @@ public class ProtocolHandler {
         if (json == null || key == null)
             return null;
         try {
-            // Matches "key" : "value" allowing for whitespace
-            Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\"(.*?)\"");
+            // Matches "key" : "value" allowing for whitespace and escaped quotes
+            Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
             Matcher m = p.matcher(json);
             if (m.find()) {
                 return unescape(m.group(1));
@@ -301,6 +301,37 @@ public class ProtocolHandler {
         evt.senderId = extractJsonString(json, "senderId");
         evt.content = extractJsonString(json, "content");
         evt.conversationId = extractJsonString(json, "conversationId");
+        return evt;
+    }
+
+    public static class NewConversationEvent {
+        public String id;
+        public String name;
+        public boolean isGroup;
+        public java.util.List<String> participantIds;
+    }
+
+    public static NewConversationEvent parseNewConversationEvent(String json) {
+        NewConversationEvent evt = new NewConversationEvent();
+        evt.id = extractJsonString(json, "id");
+        evt.name = extractJsonString(json, "name");
+        evt.isGroup = extractJsonBoolean(json, "isGroup");
+        
+        evt.participantIds = new java.util.ArrayList<>();
+        try {
+            Pattern p = Pattern.compile("\"participants\"\\s*:\\s*\\[(.*?)\\]");
+            Matcher m = p.matcher(json);
+            if (m.find()) {
+                String[] ids = m.group(1).split(",");
+                for (String pid : ids) {
+                    String cleanId = pid.trim().replace("\"", "");
+                    if (!cleanId.isEmpty()) {
+                        evt.participantIds.add(cleanId);
+                    }
+                }
+            }
+        } catch (Exception e) {}
+        
         return evt;
     }
 }

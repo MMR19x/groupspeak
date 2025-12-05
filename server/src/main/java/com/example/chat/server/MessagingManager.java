@@ -194,4 +194,37 @@ public class MessagingManager {
             }
         }
     }
+
+    /**
+     * Notify participants of a new conversation.
+     */
+    public static void notifyNewConversation(Conversation conversation, List<String> participantIds) {
+        StringBuilder json = new StringBuilder();
+        json.append("{\"type\":\"new_conversation\",");
+        json.append("\"id\":\"").append(ProtocolParser.escape(conversation.getConversationId())).append("\",");
+        json.append("\"name\":\"").append(ProtocolParser.escape(conversation.getName())).append("\",");
+        json.append("\"isGroup\":").append(conversation.isGroup()).append(",");
+        
+        json.append("\"participants\":[");
+        for(int i=0; i<participantIds.size(); i++) {
+             json.append("\"").append(ProtocolParser.escape(participantIds.get(i))).append("\"");
+             if(i < participantIds.size()-1) json.append(",");
+        }
+        json.append("]}");
+        
+        String message = json.toString();
+
+        for (String pid : participantIds) {
+            List<ClientHandler> handlers = userConnections.get(pid);
+            if (handlers != null) {
+                for (ClientHandler h : handlers) {
+                    try {
+                        h.sendMessage(message);
+                    } catch (Exception e) {
+                        System.err.println("Failed to notify user " + pid + " of new conversation: " + e.getMessage());
+                    }
+                }
+            }
+        }
+    }
 }
