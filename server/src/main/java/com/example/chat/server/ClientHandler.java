@@ -57,6 +57,10 @@ public class ClientHandler implements Runnable {
                         handleGetConversations(frame);
                         break;
 
+                    case "get_users":
+                        handleGetUsers(frame);
+                        break;
+
                     case "create_conversation":
                         handleCreateConversation(frame);
                         break;
@@ -191,6 +195,34 @@ public class ClientHandler implements Runnable {
             ProtocolParser.sendRaw(json.toString(), framing);
         } catch (Exception e) {
             ProtocolParser.sendError("server_error", "Failed to get conversations: " + e.getMessage(), framing);
+        }
+    }
+
+    private void handleGetUsers(String frame) {
+        if(userId == null) {
+            ProtocolParser.sendError("not_authenticated", "Must be logged in to get users", framing);
+            return;
+        }
+
+        try {
+            List<User> users = User.findAll();
+            StringBuilder json = new StringBuilder("{\"type\":\"users_response\",\"users\":[");
+            for(int i = 0; i < users.size(); i++) {
+                User u = users.get(i);
+                // Don't include the requesting user in the list if desired, but usually client filters it.
+                // For now, return all.
+                json.append("{\"id\":\"").append(ProtocolParser.escape(u.getUserId()))
+                    .append("\",\"username\":\"").append(ProtocolParser.escape(u.getUsername()))
+                    .append("\",\"displayName\":\"").append(ProtocolParser.escape(u.getDisplayName()))
+                    .append("\",\"isOnline\":").append(u.isOnline() == 1);
+                
+                if(i < users.size() - 1) json.append("},");
+                else json.append("}");
+            }
+            json.append("]}");
+            ProtocolParser.sendRaw(json.toString(), framing);
+        } catch (Exception e) {
+            ProtocolParser.sendError("server_error", "Failed to get users: " + e.getMessage(), framing);
         }
     }
 
