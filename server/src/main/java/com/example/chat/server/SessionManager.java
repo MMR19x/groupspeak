@@ -53,7 +53,11 @@ public class SessionManager {
             String userId = sessionRecord.getUserId();
             sessionRecord.delete();
 
-            return this.updateOnlineStatus(userId, false);
+            boolean result = this.updateOnlineStatus(userId, false);
+            if (result) {
+                MessagingManager.broadcastUserStatus(userId, false);
+            }
+            return result;
 
         } catch (SQLException e) {
             System.err.println("SessionManager: Database error during session termination: " + e.getMessage());
@@ -76,7 +80,11 @@ public class SessionManager {
             String userId = sessionRecord.getUserId();
             sessionRecord.delete();
 
-            return this.updateOnlineStatus(userId, false);
+            boolean result = this.updateOnlineStatus(userId, false);
+            if (result) {
+                MessagingManager.broadcastUserStatus(userId, false);
+            }
+            return result;
 
         } catch (SQLException e) {
             System.err.println("SessionManager: Database error during session termination: " + e.getMessage());

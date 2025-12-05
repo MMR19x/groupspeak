@@ -17,11 +17,22 @@ import java.util.regex.Pattern;
 
 public class ChatHandler {
 
-    private String sendAndReceive(String json) throws IOException {
+    private synchronized String sendAndReceive(String json) throws IOException {
         Connection conn = ClientState.getInstance().getConnection();
         if(conn == null) throw new IOException("Not Connected to Server");
+        
         conn.send(json);
-        return conn.receive();
+        
+        if (ClientState.getInstance().isAsyncMode()) {
+            try {
+                return ClientState.getInstance().getResponseQueue().take();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted while waiting for response", e);
+            }
+        } else {
+            return conn.receive();
+        }
     }
 
     public RegisterResponse register(String username, String password, String displayName, String email) throws IOException {
@@ -49,7 +60,9 @@ public class ChatHandler {
         List<Conversation> list = new ArrayList<>();
         if(!resp.success || resp.conversations == null) return new ArrayList<>();
 
-        String pattern = "\"id\":\"(.*?)\",\\s*\"name\":\"(.*?)\",\\s*\"isGroup\":(true|false)";
+        // Regex to match conversation object including participants array
+        // {"id":"...","name":"...","isGroup":...,"participants":["...","..."]}
+        String pattern = "\"id\":\"(.*?)\",\\s*\"name\":\"(.*?)\",\\s*\"isGroup\":(true|false),\\s*\"participants\":\\[(.*?)\\]";
         Pattern p = Pattern.compile(pattern);
         Matcher m = p.matcher(resp.conversations);
 
@@ -57,9 +70,23 @@ public class ChatHandler {
             String id = m.group(1);
             String name = m.group(2);
             boolean isGroup = Boolean.parseBoolean(m.group(3));
+            String participantsJson = m.group(4);
             
-            // Create the Model Object
-            list.add(new Conversation(id, name, isGroup));
+            Conversation conv = new Conversation(id, name, isGroup);
+            
+            // Parse participants array string: "id1","id2"
+            if (participantsJson != null && !participantsJson.isEmpty()) {
+                String[] ids = participantsJson.split(",");
+                for (String pid : ids) {
+                    // Remove quotes
+                    String cleanId = pid.trim().replace("\"", "");
+                    if (!cleanId.isEmpty()) {
+                        conv.participantIds.add(cleanId);
+                    }
+                }
+            }
+            
+            list.add(conv);
         }
         return list;
     }
@@ -147,18 +174,18 @@ public class ChatHandler {
     //                            MESSAGING
     // ==================================================================
 
-    public Response sendDM(String conversationID, String senderID, String content, String recipientId) throws IOException {
+    public void sendDM(String conversationID, String senderID, String content, String recipientId) throws IOException {
         String request = buildSendDmRequest(conversationID, senderID, content, recipientId);
-        String response = sendAndReceive(request);
-
-        return ProtocolHandler.parseMessageResponse(response);
+        Connection conn = ClientState.getInstance().getConnection();
+        if(conn == null) throw new IOException("Not Connected to Server");
+        conn.send(request);
     }
 
-    public Response sendToGroup(String conversationID, String senderID, String content) throws IOException {
+    public void sendToGroup(String conversationID, String senderID, String content) throws IOException {
         String request = buildSendGroupRequest(conversationID, senderID, content);
-        String response = sendAndReceive(request);
-
-        return parseMessageResponse(response);
+        Connection conn = ClientState.getInstance().getConnection();
+        if(conn == null) throw new IOException("Not Connected to Server");
+        conn.send(request);
     }
 
     // ==================================================================

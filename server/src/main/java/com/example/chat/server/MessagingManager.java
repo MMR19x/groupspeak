@@ -175,4 +175,23 @@ public class MessagingManager {
             + "\",\"content\":\"" + ProtocolParser.escape(content) 
             + "\",\"conversationId\":\"" + ProtocolParser.escape(conversationId) + "\"}";
     }
+
+    /**
+     * Broadcast a user's online status change to all connected clients.
+     */
+    public static void broadcastUserStatus(String userId, boolean isOnline) {
+        String json = "{\"type\":\"status\",\"userId\":\"" + ProtocolParser.escape(userId) + "\",\"isOnline\":" + isOnline + "}";
+        
+        synchronized(userConnections) {
+            for (List<ClientHandler> handlers : userConnections.values()) {
+                for (ClientHandler h : handlers) {
+                    try {
+                        h.sendMessage(json);
+                    } catch (Exception e) {
+                        System.err.println("MessagingManager: Failed to broadcast status: " + e.getMessage());
+                    }
+                }
+            }
+        }
+    }
 }

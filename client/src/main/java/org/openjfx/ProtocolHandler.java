@@ -277,4 +277,30 @@ public class ProtocolHandler {
         resp.message = extractJsonString(json, "message");
         return resp;
     }
+
+    public static class StatusUpdate {
+        public String userId;
+        public boolean isOnline;
+    }
+
+    public static StatusUpdate parseStatusUpdate(String json) {
+        StatusUpdate status = new StatusUpdate();
+        status.userId = extractJsonString(json, "userId");
+        status.isOnline = extractJsonBoolean(json, "isOnline");
+        return status;
+    }
+    
+    public static class MessageEvent {
+        public String senderId;
+        public String content;
+        public String conversationId;
+    }
+    
+    public static MessageEvent parseMessageEvent(String json) {
+        MessageEvent evt = new MessageEvent();
+        evt.senderId = extractJsonString(json, "senderId");
+        evt.content = extractJsonString(json, "content");
+        evt.conversationId = extractJsonString(json, "conversationId");
+        return evt;
+    }
 }

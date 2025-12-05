@@ -1,5 +1,8 @@
 package org.openjfx;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 public class ClientState {
     private static ClientState instance;
     private Connection connection;
@@ -9,6 +12,9 @@ public class ClientState {
     private String currentUsername;
     private String currentDisplayName;
     private String currentEmail;
+
+    private boolean asyncMode = false;
+    private final BlockingQueue<String> responseQueue = new LinkedBlockingQueue<>();
 
     private ClientState() {}
 
@@ -41,4 +47,9 @@ public class ClientState {
 
     public String getCurrentEmail() { return currentEmail; }
     public void setCurrentEmail(String currentEmail) { this.currentEmail = currentEmail; }
+
+    public boolean isAsyncMode() { return asyncMode; }
+    public void setAsyncMode(boolean asyncMode) { this.asyncMode = asyncMode; }
+
+    public BlockingQueue<String> getResponseQueue() { return responseQueue; }
 }

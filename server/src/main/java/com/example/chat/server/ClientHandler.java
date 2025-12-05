@@ -193,7 +193,18 @@ public class ClientHandler implements Runnable {
                 json.append("{\"id\":\"").append(ProtocolParser.escape(c.getConversationId()))
                     .append("\",\"name\":\"").append(ProtocolParser.escape(c.getName()))
                     .append("\",\"isGroup\":").append(c.isGroup());
-                if(i < conversations.size() - 1) json.append(",");
+                
+                // Add participants
+                List<ConversationParticipant> parts = ConversationParticipant.findByConversationId(c.getConversationId());
+                json.append(",\"participants\":[");
+                for(int j=0; j<parts.size(); j++) {
+                     json.append("\"").append(ProtocolParser.escape(parts.get(j).getUserId())).append("\"");
+                     if(j < parts.size()-1) json.append(",");
+                }
+                json.append("]");
+
+                if(i < conversations.size() - 1) json.append("},");
+                else json.append("}");
             }
             json.append("]}");
             ProtocolParser.sendRaw(json.toString(), framing);

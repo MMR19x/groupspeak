@@ -7,6 +7,7 @@ public class Conversation {
     public String id;
     public String name;
     public boolean isGroup;
+    public List<String> participantIds = new ArrayList<>();
 
     public Conversation(String id, String name, boolean isGroup) {
         this.id = id;

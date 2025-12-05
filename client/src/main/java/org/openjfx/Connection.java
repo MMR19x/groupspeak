@@ -32,7 +32,7 @@ public class Connection {
       socket.close();
   }
 
-  public void send(String message) throws IOException {
+  public synchronized void send(String message) throws IOException {
     if (bufferedWriter != null) {
       bufferedWriter.write(message);
       bufferedWriter.newLine();
