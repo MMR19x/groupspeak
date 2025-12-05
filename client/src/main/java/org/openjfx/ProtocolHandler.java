@@ -26,15 +26,33 @@ public class ProtocolHandler {
         if (json == null || key == null)
             return null;
         try {
-            Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\\\"(.*?)\\\"");
+            // Matches "key" : "value" allowing for whitespace
+            Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\"(.*?)\"");
             Matcher m = p.matcher(json);
             if (m.find()) {
                 return unescape(m.group(1));
             }
         } catch (Exception e) {
-            System.out.println(e);
+            System.out.println("Error extracting string for key " + key + ": " + e);
         }
         return null;
+    }
+
+    // Extract a boolean value from a JSON object by key.
+    private static boolean extractJsonBoolean(String json, String key) {
+        if (json == null || key == null)
+            return false;
+        try {
+            // Matches "key" : true or "key" : false
+            Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*(true|false)");
+            Matcher m = p.matcher(json);
+            if (m.find()) {
+                return Boolean.parseBoolean(m.group(1));
+            }
+        } catch (Exception e) {
+            System.out.println("Error extracting boolean for key " + key + ": " + e);
+        }
+        return false;
     }
 
     // Request builders
@@ -60,6 +78,14 @@ public class ProtocolHandler {
 
     public static String buildLogoutRequest(String username) {
         return "{\"type\":\"logout\",\"username\":\"" + escape(username) + "\"}";
+    }
+
+    public static String buildGetUsersRequest() {
+        return "{\"type\":\"get_users\"}";
+    }
+
+    public static String buildGetMessagesRequest(String conversationId) {
+        return "{\"type\":\"get_messages\",\"conversationId\":\"" + escape(conversationId) + "\"}";
     }
 
     public static String buildGetConversationsRequest() {
@@ -116,7 +142,7 @@ public class ProtocolHandler {
 
     public static RegisterResponse parseRegisterResponse(String json) {
         RegisterResponse resp = new RegisterResponse();
-        resp.success = "true".equals(extractJsonString(json, "success"));
+        resp.success = extractJsonBoolean(json, "success");
         resp.userId = extractJsonString(json, "userId");
         resp.message = extractJsonString(json, "message");
         return resp;
@@ -129,7 +155,7 @@ public class ProtocolHandler {
 
     public static LoginResponse parseLoginResponse(String json) {
         LoginResponse resp = new LoginResponse();
-        resp.success = "true".equals(extractJsonString(json, "success"));
+        resp.success = extractJsonBoolean(json, "success");
         resp.userId = extractJsonString(json, "userId");
         resp.sessionToken = extractJsonString(json, "sessionToken");
         resp.message = extractJsonString(json, "message");
@@ -138,7 +164,48 @@ public class ProtocolHandler {
 
     public static Response parseLogoutResponse(String json) {
         Response resp = new Response();
-        resp.success = "true".equals(extractJsonString(json, "success"));
+        resp.success = extractJsonBoolean(json, "success");
+        return resp;
+    }
+
+    public static class UsersResponse extends Response {
+        public String users; // JSON array as string
+    }
+
+    public static UsersResponse parseUsersResponse(String json) {
+        UsersResponse resp = new UsersResponse();
+        resp.success = extractJsonBoolean(json, "success");
+        try {
+            // Non-greedy match for array content
+            Pattern p = Pattern.compile("\"users\"\\s*:\\s*(\\[.*\\])");
+            Matcher m = p.matcher(json);
+            if (m.find()) {
+                resp.users = m.group(1);
+            }
+        } catch (Exception e) {
+             System.out.println("Error extracting users array: " + e);
+        }
+        resp.message = extractJsonString(json, "message");
+        return resp;
+    }
+
+    public static class MessagesResponse extends Response {
+        public String messages; // JSON array string
+    }
+
+    public static MessagesResponse parseMessagesResponse(String json) {
+        MessagesResponse resp = new MessagesResponse();
+        resp.success = extractJsonBoolean(json, "success");
+        try {
+            Pattern p = Pattern.compile("\"messages\"\\s*:\\s*(\\[.*\\])");
+            Matcher m = p.matcher(json);
+            if (m.find()) {
+                resp.messages = m.group(1);
+            }
+        } catch (Exception e) {
+             System.out.println("Error extracting messages array: " + e);
+        }
+        resp.message = extractJsonString(json, "message");
         return resp;
     }
 
@@ -148,15 +215,17 @@ public class ProtocolHandler {
 
     public static ConversationsResponse parseConversationsResponse(String json) {
         ConversationsResponse resp = new ConversationsResponse();
-        resp.success = "true".equals(extractJsonString(json, "success"));
-        // Extract conversations array - simplistic, assumes no nested quotes
+        resp.success = extractJsonBoolean(json, "success");
+        // Extract conversations array - looks for "conversations": [...]
         try {
-            Pattern p = Pattern.compile("\"conversations\"\\s*:\\s*(\\[.*?\\])");
+            // Non-greedy match for array content
+            Pattern p = Pattern.compile("\"conversations\"\\s*:\\s*(\\[.*\\])");
             Matcher m = p.matcher(json);
             if (m.find()) {
                 resp.conversations = m.group(1);
             }
         } catch (Exception e) {
+             System.out.println("Error extracting conversations array: " + e);
         }
         resp.message = extractJsonString(json, "message");
         return resp;
@@ -168,7 +237,7 @@ public class ProtocolHandler {
 
     public static CreateConversationResponse parseCreateConversationResponse(String json) {
         CreateConversationResponse resp = new CreateConversationResponse();
-        resp.success = "true".equals(extractJsonString(json, "success"));
+        resp.success = extractJsonBoolean(json, "success");
         resp.conversationId = extractJsonString(json, "conversationId");
         resp.message = extractJsonString(json, "message");
         return resp;
@@ -176,28 +245,28 @@ public class ProtocolHandler {
 
     public static Response parseAddParticipantResponse(String json) {
         Response resp = new Response();
-        resp.success = "true".equals(extractJsonString(json, "success"));
+        resp.success = extractJsonBoolean(json, "success");
         resp.message = extractJsonString(json, "message");
         return resp;
     }
 
     public static Response parseRemoveParticipantResponse(String json) {
         Response resp = new Response();
-        resp.success = "true".equals(extractJsonString(json, "success"));
+        resp.success = extractJsonBoolean(json, "success");
         resp.message = extractJsonString(json, "message");
         return resp;
     }
 
     public static Response parseMessageResponse(String json) {
         Response resp = new Response();
-        resp.success = "true".equals(extractJsonString(json, "success"));
+        resp.success = extractJsonBoolean(json, "success");
         resp.message = extractJsonString(json, "message");
         return resp;
     }
 
     public static Response parsePingResponse(String json) {
         Response resp = new Response();
-        resp.success = json.contains("\"type\":\"mekey\"");
+        resp.success = json != null && json.contains("\"type\":\"mekey\"");
         return resp;
     }
 

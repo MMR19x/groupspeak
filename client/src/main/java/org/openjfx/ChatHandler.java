@@ -6,7 +6,8 @@ package org.openjfx;
 import static org.openjfx.ProtocolHandler.*;
 
 import org.openjfx.model.Conversation;
-import org.openjfx.model.Framing;
+import org.openjfx.model.Message;
+import org.openjfx.model.User;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -15,30 +16,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ChatHandler {
-    private Socket socket;
-    private Framing framing;
-
-    // Connecting to Server
-    public void connectToServer(String host, int port) throws IOException {
-        // Create the connection
-        this.socket = new Socket(host, port);
-        this.framing = new Framing(socket.getInputStream(), socket.getOutputStream());
-    }
-
-    // Disconnecting from Server
-    public void disconnectFromServer() {
-        if(framing != null) framing.close();
-        try {
-            if(socket != null) socket.close();
-        } catch (IOException e) {
-            System.err.println("Error Closing Socket: " + e.getMessage());
-        }
-    }
 
     private String sendAndReceive(String json) throws IOException {
-        if(framing == null) throw new IOException("Not Connected to Server");
-        framing.writeFrame(json);
-        return framing.readFrame();
+        Connection conn = ClientState.getInstance().getConnection();
+        if(conn == null) throw new IOException("Not Connected to Server");
+        conn.send(json);
+        return conn.receive();
+    }
+
+    public RegisterResponse register(String username, String password, String displayName, String email) throws IOException {
+        String request = buildRegisterRequest(username, password, displayName, email);
+        String response = sendAndReceive(request);
+        System.out.println("Register Response: " + response);
+        return parseRegisterResponse(response);
+    }
+
+    public LoginResponse login(String username, String password) throws IOException {
+        String request = buildLoginRequest(username, password, "desktop");
+        String response = sendAndReceive(request);
+        return parseLoginResponse(response);
     }
 
     // ==================================================================
@@ -64,6 +60,57 @@ public class ChatHandler {
             
             // Create the Model Object
             list.add(new Conversation(id, name, isGroup));
+        }
+        return list;
+    }
+
+    public List<User> getUsers() throws IOException {
+        String request = buildGetUsersRequest();
+        String json = sendAndReceive(request);
+        // System.out.println("getUsers JSON: " + json); // Commented out debug
+
+        UsersResponse resp = parseUsersResponse(json);
+        List<User> list = new ArrayList<>();
+        if(!resp.success || resp.users == null) return new ArrayList<>();
+
+        // Regex to parse user objects in the array
+        // {"id":"...","username":"...","displayName":"...","isOnline":true/false}
+        String pattern = "\"id\":\"(.*?)\",\\s*\"username\":\"(.*?)\",\\s*\"displayName\":\"(.*?)\",\\s*\"isOnline\":(true|false)";
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(resp.users);
+
+        while (m.find()) {
+            String id = m.group(1);
+            String username = m.group(2);
+            String displayName = m.group(3);
+            boolean isOnline = Boolean.parseBoolean(m.group(4));
+            
+            list.add(new User(id, username, displayName, isOnline));
+        }
+        return list;
+    }
+
+    public List<Message> getMessages(String conversationId) throws IOException {
+        String request = buildGetMessagesRequest(conversationId);
+        String json = sendAndReceive(request);
+        
+        MessagesResponse resp = parseMessagesResponse(json);
+        List<Message> list = new ArrayList<>();
+        if(!resp.success || resp.messages == null) return new ArrayList<>();
+
+        // Regex for Message object
+        // {"id":"...","senderId":"...","content":"...","createdAt":"..."}
+        String pattern = "\"id\":\"(.*?)\",\\s*\"senderId\":\"(.*?)\",\\s*\"content\":\"(.*?)\",\\s*\"createdAt\":\"(.*?)\"";
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(resp.messages);
+
+        while (m.find()) {
+            String id = m.group(1);
+            String senderId = m.group(2);
+            String content = m.group(3);
+            String createdAt = m.group(4);
+            
+            list.add(new Message(id, senderId, content, createdAt));
         }
         return list;
     }
